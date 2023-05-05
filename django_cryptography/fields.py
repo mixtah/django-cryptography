@@ -24,13 +24,17 @@ from django.utils.translation import gettext_lazy as _
 
 from django_cryptography.core.signing import SignatureExpired
 from django_cryptography.typing import DatabaseWrapper
-from django_cryptography.utils.crypto import FernetBytes
+from django_cryptography.utils.crypto import FernetBytes, InvalidToken, settings
+
 
 F = TypeVar("F", bound=models.Field)
 FIELD_CACHE: Dict[type, type] = {}
 
 Expired = object()
 """Represents an expired encryption value."""
+
+UnDecryptable = object()
+"""Represents an encryption value that cannot be decrypted."""
 
 
 class PickledField(models.BinaryField):
@@ -120,6 +124,10 @@ class EncryptedMixin(models.Field):
             return pickle.loads(self._fernet.decrypt(value, self.ttl))
         except SignatureExpired:
             return Expired
+        except InvalidToken as err:
+            if settings.CRYPTOGRAPHY_EXCEPTION_ON_FAIL:
+                raise InvalidToken from err
+            return UnDecryptable
 
     def check(self, **kwargs: Any) -> List[CheckMessage]:
         errors = super().check(**kwargs)

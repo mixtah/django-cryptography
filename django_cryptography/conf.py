@@ -13,6 +13,7 @@ class CryptographyConf(AppConf):
     DIGEST = hashes.SHA256()
     KEY = None
     SALT = "django-cryptography"
+    EXCEPTION_ON_FAIL = True
 
     class Meta:
         prefix = "cryptography"
